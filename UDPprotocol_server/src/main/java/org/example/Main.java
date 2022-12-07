@@ -16,6 +16,7 @@ public class Main {
     public final static String exitWord = "exit";
 
 
+
     public static void main(String[] args) throws IOException {
         try {
 
@@ -30,6 +31,9 @@ public class Main {
 
             DatagramSocket serverSocket = new DatagramSocket(SERVICE_PORT, IPAddressSender);
 
+            byte[] keyArray = new byte[1024];
+
+
             Thread receiverThread = new Thread(new ReceiverUDP(serverSocket));
             receiverThread.start();
 
@@ -38,19 +42,27 @@ public class Main {
             while (true)
             {
                 byte[] sendingDataBuffer = new byte[1024];
+                for (short i = 0; i < keyArray.length; i++)
+                    keyArray[i] = (byte) (1 + (byte) (Math.random() * 9)); //генерация ключа
 
                 String message = scanner.nextLine();
                 sendingDataBuffer = message.getBytes();
 
                 if (message.equals(exitWord)) {
                         System.out.println("Вы завершили работу при помощи ключевого слова. ");
-                        DatagramPacket senderPacket = new DatagramPacket(sendingDataBuffer, sendingDataBuffer.length, IPAddressReciever, SERVICE_PORT);
-                        serverSocket.send(senderPacket);
                         break;
                 }
 
+                for (short i = 0; i < sendingDataBuffer.length; i++)        //тип шифруем
+                    sendingDataBuffer[i] += keyArray[i];
+
+
+
                 DatagramPacket senderPacket = new DatagramPacket(sendingDataBuffer, sendingDataBuffer.length, IPAddressReciever, SERVICE_PORT);
                 serverSocket.send(senderPacket);
+                DatagramPacket keyPacket = new DatagramPacket(keyArray, keyArray.length, IPAddressReciever, SERVICE_PORT);
+                serverSocket.send(keyPacket);
+
             }
            System.exit(0);
 
@@ -73,31 +85,29 @@ public class Main {
                 while (true) {
 
                     byte[] receivingDataBuffer = new byte[1024];
-                    byte[] savePlace = new byte[1024];
+                    byte[] safePlace = new byte[1024];
+                    byte[] keyArray = new byte[1024];
 
                     DatagramPacket receivePacket = new DatagramPacket(receivingDataBuffer, receivingDataBuffer.length);
-                    // System.out.println("Waiting for a client to connect...");
-                    // Получите данные от клиента и сохраните их в inputPacket
+                    DatagramPacket keyPacket = new DatagramPacket(keyArray, keyArray.length);
                     serverSocket.receive(receivePacket);
+                    serverSocket.receive(keyPacket);
 
                      for (int i = 0; i < receivingDataBuffer.length; i++) {
-                            savePlace[i] = receivingDataBuffer[i];
+                            safePlace[i] = receivingDataBuffer[i];
                          if (receivingDataBuffer[i] == 0) {
                              receivingDataBuffer = new byte[i];
                              break;
                          }
                      }
                     for (int i = 0; i < receivingDataBuffer.length; i++){
-                       receivingDataBuffer[i] =  savePlace[i];
+                       receivingDataBuffer[i] =  safePlace[i];
                     }
 
+                    for (short i = 0; i < receivingDataBuffer.length; i++)        //тип дешифруем
+                        receivingDataBuffer[i] -= keyArray[i];//KEY;
 
                     String receivedData = new String(receivingDataBuffer, StandardCharsets.UTF_8);
-
-                    if (receivedData.equals(exitWord)) {
-                        System.out.println("Ваш собеседник завершил работу при помощи ключевого слова. ");
-                        System.exit(0);
-                    }
 
                     System.out.println("Sent from the client: " + receivedData);
 
