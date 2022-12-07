@@ -56,8 +56,6 @@ public class Main {
                 for (short i = 0; i < sendingDataBuffer.length; i++)        //тип шифруем
                     sendingDataBuffer[i] += keyArray[i];
 
-
-
                 DatagramPacket senderPacket = new DatagramPacket(sendingDataBuffer, sendingDataBuffer.length, IPAddressReciever, SERVICE_PORT);
                 serverSocket.send(senderPacket);
                 DatagramPacket keyPacket = new DatagramPacket(keyArray, keyArray.length, IPAddressReciever, SERVICE_PORT);
@@ -65,7 +63,6 @@ public class Main {
 
             }
            System.exit(0);
-
 
         } catch (SocketException e) {
             System.out.println("Пользователь с введенным вами IP-адресом уже общается в системе. Попробуйте использовать другой адрес");
